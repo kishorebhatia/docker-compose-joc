@@ -4,11 +4,16 @@ dns:
         - "172.17.42.1:53:53/udp"
     volumes: 
         - /var/run/docker.sock:/var/run/docker.sock
-        - ~/projects/cloudbees/docker/compose/docker-compose-joc:/data
+        - data:/data
     command: "-debug=true"
+    environment:
+        - nameserver=8.8.8.8:53
+    restart: always
 joc:
     image: apemberton/jenkins-operations-center
     command: --prefix=""
+    ports:
+        - "81:8080"
     expose:
         - "4001"
     volumes_from:
@@ -17,9 +22,11 @@ joc:
         - JENKINS_HOME=/data/var/lib/jenkins/joc
         - DNSDOCK_NAME=joc
         - DNSDOCK_IMAGE=demo
+    restart: always
 apiTeam:
-    image: apemberton/jenkins-enterprise
-    command: --prefix=""
+    image: kmadel/jenkins-enterprise
+    ports:
+        - "82:8080"
     volumes_from:
         - dns
         - joc
@@ -27,9 +34,11 @@ apiTeam:
         - JENKINS_HOME=/data/var/lib/jenkins/api-team
         - DNSDOCK_NAME=apiteam
         - DNSDOCK_IMAGE=demo
+    restart: always
 mobileTeam1:
-    image: apemberton/jenkins-enterprise
-    command: --prefix=""
+    image: kmadel/jenkins-enterprise
+    ports:
+        - "83:8080"
     volumes_from:
         - dns
         - apiTeam
@@ -37,9 +46,11 @@ mobileTeam1:
         - JENKINS_HOME=/data/var/lib/jenkins/mobile-team
         - DNSDOCK_NAME=mobileteam1
         - DNSDOCK_IMAGE=demo
+    restart: always
 mobileTeam2:
-    image: apemberton/jenkins-enterprise
-    command: --prefix=""
+    image: kmadel/jenkins-enterprise
+    ports:
+        - "84:8080"
     volumes_from:
         - dns
         - mobileTeam1
@@ -47,35 +58,59 @@ mobileTeam2:
         - JENKINS_HOME=/data/var/lib/jenkins/mobile-team
         - DNSDOCK_NAME=mobileteam2
         - DNSDOCK_IMAGE=demo
+    restart: always
 slave1:
     image: apemberton/jenkins-slave
+    ports:
+        - "91:8080"
     volumes_from:
         - dns
     environment:
         - DNSDOCK_NAME=slave1
         - DNSDOCK_IMAGE=demo
+    restart: always
 slave2:
     image: apemberton/jenkins-slave
+    ports:
+        - "92:8080"
     volumes_from:
         - dns
     environment:
         - DNSDOCK_NAME=slave2
         - DNSDOCK_IMAGE=demo
+    restart: always
 slave3:
     image: apemberton/jenkins-slave
+    ports:
+        - "93:8080"
     volumes_from:
         - dns
     environment:
         - DNSDOCK_NAME=slave3
         - DNSDOCK_IMAGE=demo
+    restart: always
+slave4:
+    image: apemberton/jenkins-slave
+    ports:
+        - "94:8080"
+    volumes_from:
+        - dns
+    environment:
+        - DNSDOCK_NAME=slave4
+        - DNSDOCK_IMAGE=demo
+    restart: always
 proxy:
     image: dockerfile/haproxy
+    ports:
+        - "80:8080"
     expose:
         - "4001"
     volumes_from:
         - mobileTeam2
     volumes:
-        - ~/projects/cloudbees/docker/compose/docker-compose-joc/haproxy:/haproxy-override
+        - data/haproxy:/haproxy-override
     environment:
         - DNSDOCK_NAME=mobileteam
         - DNSDOCK_IMAGE=proxy
+    restart: always
+
