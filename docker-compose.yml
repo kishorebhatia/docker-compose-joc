@@ -10,12 +10,10 @@ dns:
         - nameserver=8.8.8.8:53
     restart: always
 joc:
-    image: apemberton/jenkins-operations-center
+    image: kmadel/jenkins-operations-center:1.596.1.1-alpha-4
     command: --prefix=""
     ports:
         - "81:8080"
-    expose:
-        - "4001"
     volumes_from:
         - dns
     environment:
@@ -24,7 +22,7 @@ joc:
         - DNSDOCK_IMAGE=demo
     restart: always
 apiTeam:
-    image: kmadel/jenkins-enterprise
+    image: kmadel/jenkins-enterprise:1.580.13.1
     ports:
         - "82:8080"
     volumes_from:
@@ -36,7 +34,7 @@ apiTeam:
         - DNSDOCK_IMAGE=demo
     restart: always
 mobileTeam1:
-    image: kmadel/jenkins-enterprise
+    image: kmadel/jenkins-enterprise:1.580.13.1
     ports:
         - "83:8080"
     volumes_from:
@@ -48,7 +46,7 @@ mobileTeam1:
         - DNSDOCK_IMAGE=demo
     restart: always
 mobileTeam2:
-    image: kmadel/jenkins-enterprise
+    image: kmadel/jenkins-enterprise:1.580.13.1
     ports:
         - "84:8080"
     volumes_from:
@@ -60,7 +58,7 @@ mobileTeam2:
         - DNSDOCK_IMAGE=demo
     restart: always
 slave1:
-    image: apemberton/jenkins-slave
+    image: kmadel/jenkins-slave:1.0
     ports:
         - "91:8080"
     volumes_from:
@@ -70,7 +68,7 @@ slave1:
         - DNSDOCK_IMAGE=demo
     restart: always
 slave2:
-    image: apemberton/jenkins-slave
+    image: kmadel/jenkins-slave:1.0
     ports:
         - "92:8080"
     volumes_from:
@@ -80,7 +78,7 @@ slave2:
         - DNSDOCK_IMAGE=demo
     restart: always
 slave3:
-    image: apemberton/jenkins-slave
+    image: kmadel/jenkins-slave:1.0
     ports:
         - "93:8080"
     volumes_from:
@@ -90,7 +88,7 @@ slave3:
         - DNSDOCK_IMAGE=demo
     restart: always
 slave4:
-    image: apemberton/jenkins-slave
+    image: kmadel/jenkins-slave:1.0
     ports:
         - "94:8080"
     volumes_from:
@@ -100,7 +98,7 @@ slave4:
         - DNSDOCK_IMAGE=demo
     restart: always
 proxy:
-    image: dockerfile/haproxy
+    image: kmadel/haproxy:1.0
     ports:
         - "80:8080"
     expose:
