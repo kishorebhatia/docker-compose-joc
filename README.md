@@ -1,7 +1,7 @@
 # docker-compose-joc
-Docker Compose based Jenkins Operations Center by CloudBees environment.
+Docker Compose based CloudBees Jenkins Operations Center  environment.
 
-Uses [Docker Compose](https://docs.docker.com/compose/) to build a Jenkins Operations Center by CloudBees environment using Docker containers.
+Uses [Docker Machine](http://docs.docker.com/machine/) and [Docker Compose](https://docs.docker.com/compose/) to build a Jenkins Operations Center by CloudBees environment using Docker containers.
 
 Mostly specific to Mac OS X but should work on Windows and Linux as well.
 
@@ -14,36 +14,52 @@ Mostly specific to Mac OS X but should work on Windows and Linux as well.
   - http://mobileteam1.demo.docker:8080
   - http://mobileteam2.demo.docker:8080
 - HA Proxy - stats available at: http://mobileteam.proxy.docker:9000
+- 4 slaves with git installed, running ssh on port 22, Jenkins Home - /home/jenkins
+- Coming soon: Docker enabled slave
 
 ###Instructions
-- install [boot2docker](https://github.com/boot2docker/osx-installer/releases/tag/v1.5.0)
+- install VirtualBox 4.3.26 or later
+- install [Docker Machine](http://docs.docker.com/machine/#installation)
 - install [Docker Compose](https://docs.docker.com/compose/install/)
-- run boot2docker and add `bip` and `dns` docker daemon default options
-  - `boot2docker ssh`
+- create a Docker Machine and add `bip` and `dns` docker daemon default options (I use cjoc as `{machine_name}`)
+  - `docker-machine create --driver=virtualbox --virtualbox-memory=4096 {machine_name}`
+  - set env for newly created machine: `eval "$(docker-machine env)"`
+  - ssh into machine: `docker-machine ssh {machine_name}`
   - `vi /var/lib/boot2docker/profile`
-  - add the following line and save: `EXTRA_ARGS="-bip=172.17.42.1/24 -dns 172.17.42.1 -dns 8.8.8.8"`
-  - exit ssh and restart boot2docker: `boot2docker restart`
+  - append to `EXTRA_ARGS` and save: `-bip=172.17.42.1/24 -dns 172.17.42.1 -dns 8.8.8.8 `
   - update the VirtualBox network adapter (vboxnet<x> - number may vary) *Promiscuous Mode* to *Allow All* 
-- Route traffic from Mac OS X to boot2docker VM IP: `sudo route -n add -net 172.17.0.0 <BOOT2DOCKER_IP>`
-  - BOOT2DOCKER_IP retrieved via `boot2docker ip`
+- replace vboxfs /Users share with nfs
+  - Create NFS share on Mac OS X side:
+    - create exports file: `sudo vi /etc/exports` with contents (IP used here is your `docker-machine ip {machine_name}`): `/Users 192.168.99.100 -alldirs -mapall={your_username}`
+    - restart nfsd: `sudo nfsd restart`
+  - Setup Docker Machine nfs:
+    - Get IP of you VBox for the Docker host you are updating: `VBoxManage showvminfo {machine_name} --machinereadable | grep hostonlyadapter`
+    - Run the following command to get the IPAddress for the VBox Network Adapter that matches the name from above: `VBoxManage list hostonlyifs`
+    - Add following script to your Docker Machine at `/var/lib/boot2docker/bootlocal.sh`:
+      ```shell
+      #/bin/bash
+      sudo umount /Users
+      sudo /usr/local/etc/init.d/nfs-client start
+      sudo mount -t nfs -o noacl,async 192.168.99.1:/Users /Users
+      ```
+    - Make the `bootlocal.sh` file executable: `sudo chmod +x bootlocal.sh`
+    - exit ssh and restart Docker Machine: `docker-machine restart`
+- Route traffic from Mac OS X to Docker Machine VM IP: `sudo route -n add -net 172.17.0.0 <MACHINE_IP>`
+  - MACHINE_IP retrieved via `docker-machine ip {machine_name}`
 - Configure OS X to use dnsdock DNS by creating the file `/etc/resolver/docker` with content of `nameserver 172.17.42.1`
-- clone this repo to (that is what the Jenkins `HOME` default setting points to on the Mac: `~/projects/cloudbees/docker/compose/docker-compose-joc/`
+- Clone this repo anywhere under your `/Users` directory
 - If you wouldl like to have your Jenkins `HOME` directory somewhere else you need to update the `docker-compose.yml` file:
-  - Update `~/projects/cloudbees/docker/compose/docker-compose-joc/` under dnsdock -> volumes to point to where you want your Jenkins `HOME` directory. 
+  - Update `data` under dnsdock -> volumes to point to where you want your Jenkins `HOME` directory. 
   NOTE: You could have several different directories configured for different demos and just change this to point to the demo you want to run.
 
 ###Gotchas
 If you are no longer able to access docker container hosts via Mac OS X:
 - check that the route is correct: `sudo route -n add -net 172.17.0.0 192.168.59.103`
   - Gateway should be `boot2docker ip`
-- make sure you are able to ping the `boot2docker ip` - ex (the IP may vary): `ping 192.168.59.103` from Mac OS X
+- make sure you are able to ping the `docker-machine ip {machine_name}` - ex (the IP may vary): `ping 192.168.59.103` from Mac OS X
 - check to see that the `ip route` you added, still points to your `boot2docker ip` - `sudo route -n get 172.17.42.1`
 - You may have to flush DNS cache - on Yosemite use: `sudo discoveryutil mdnsflushcache`
-
-###Create a New Demo
-- You should probably fork this repo, but not absolutely necessary
-- checkout a new branch or tag: `git checkout -b workflow-demo master`
-- update `docker-compose.yml` to include whatever additional Docker containers you may need - dnsdock will automatically expose them to Mac OS X, so you could for example create a Jetty container with the environment parameters `DNSDOCK_NAME=staging` and a `DNSDOCK_IMAGE=jetty` and if you didn't change the dnsdock defautls, your new jetty container will be available at http://staging.jettty.docker
-- You may keep the base Jenkins joc and apiteam or start completely from scratch by removing the `var` directory. At start up, Jenkins Enterprise and JOC will rebuild the respective working directories from scracth - so this may take some time.
-
-You can have as many branches for different demo scenarios that you can think of...
+- You may want to verify that you are using nfs instead of vboxfs for the `/Users` mount:
+  - `docker-machine ssh {machine_name}`
+  - `mount`
+  - Look for the `/Users` mount and make sure it is using nfs
