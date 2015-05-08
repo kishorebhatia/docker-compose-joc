@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<l:dependencies xmlns:l='licenses' groupId='com.cloudbees.nectar.plugins' artifactId='cloudbees-template' version='4.15'><l:dependency name='CloudBees Template Plugin' groupId='com.cloudbees.nectar.plugins' artifactId='cloudbees-template' version='4.15' url='http://release-notes.cloudbees.com/product/Template+plugin'><l:description>Captures commonalities in configuration between jobs.
-    Permits administrators to create new job types, builders, and more, using a simplified custom configuration UI.</l:description></l:dependency></l:dependencies>
