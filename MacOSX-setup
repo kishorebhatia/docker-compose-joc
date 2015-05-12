@@ -1,0 +1,3 @@
+Docker Compose based CloudBees Jenkins Operations Center environment - for MacOSX
+
+Uses Docker Machine and Docker Compose to build a Jenkins Operations Center by CloudBees environment using Docker containers.
