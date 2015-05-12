@@ -1,3 +1,40 @@
 Docker Compose based CloudBees Jenkins Operations Center environment - for MacOSX
 
 Uses Docker Machine and Docker Compose to build a Jenkins Operations Center by CloudBees environment using Docker containers.
+
+Base includes:
+
+dnsdock providing DNS for docker containers and exposed to Mac OS X
+JOC by CloudBees (non HA) - availabe at http://joc.demo.docker:8080
+JNLP port: 4001
+Client Master api-team (non HA): http://apiteam.demo.docker:8080
+Client Master (HA) mobile-team: http://mobileteam.proxy.docker
+http://mobileteam1.demo.docker:8080
+http://mobileteam2.demo.docker:8080
+HA Proxy - stats available at: http://mobileteam.proxy.docker:9000
+4 slaves with git installed, running ssh on port 22, Jenkins Home - /home/jenkins
+Coming soon: Docker enabled slave
+
+Instructions
+
+- install VirtualBox 4.3.26 or later
+- install Docker Machine
+- install Docker Compose
+1) create a Docker Machine and add bip and dns docker daemon default options (I use kbjoc as {machine_name})
+docker-machine create --driver=virtualbox --virtualbox-memory=4096 kbjoc
+2) set env for newly created machine: eval "$(docker-machine env kbjoc)"
+3) ssh into machine: docker-machine ssh kbjoc
+- vi /var/lib/boot2docker/profile
+- append to EXTRA_ARGS and save: -bip=172.17.42.1/24 -dns 172.17.42.1 -dns 8.8.8.8
+4) update the VirtualBox network adapter (vboxnet - number may vary) Promiscuous Mode to Allow All
+
+Replace vboxfs /Users share with nfs
+- Create NFS share on Mac OS X side:
+- create exports file: sudo vi /etc/exports with contents (IP used here is your docker-machine ip {machine_name}): /Users 192.168.99.100 -alldirs -mapall={your_username}
+- restart nfsd: sudo nfsd restart
+Setup Docker Machine nfs:
+Get IP of you VBox for the Docker host you are updating: VBoxManage showvminfo {machine_name} --machinereadable | grep hostonlyadapter
+Run the following command to get the IPAddress for the VBox Network Adapter that matches the name from above: VBoxManage list hostonlyifs
+Add following script to your Docker Machine at /var/lib/boot2docker/bootlocal.sh: shell #/bin/bash sudo umount /Users sudo /usr/local/etc/init.d/nfs-client start sudo mount -t nfs -o noacl,async 192.168.99.1:/Users /Users 
+Make the bootlocal.sh file executable: sudo chmod +x bootlocal.sh
+exit ssh and restart Docker Machine: docker-machine restart
